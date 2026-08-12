@@ -8,21 +8,25 @@ plots/
 resumes/
 reports/
 
-# Local databases (if you move off CSV later)
+# Local databases + SQLite sidecars
 *.db
 *.sqlite
 *.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
 
 # Local / private notes & notebook caches
+notes.md
 notes.ipynb
 notebooks/.cache.sqlite
-
-# Optional: uncomment if you want design notes private
-# notes.md
 
 # Local config that may contain personal paths or preferences
 config.local.*
 *.local.csv
+
+# Jupyter / local experiment dumps
+~$*
 
 # -----------------------------------------------------------------------------
 # Python – source: https://github.com/github/gitignore/blob/main/Python.gitignore
@@ -159,7 +163,7 @@ tempCodeRunnerFile.py
 Thumbs.db
 
 # -----------------------------------------------------------------------------
-# Optional IDE folders (uncomment if you prefer not to commit editor config)
+# IDE folders
 # -----------------------------------------------------------------------------
 .idea/
 .vscode/

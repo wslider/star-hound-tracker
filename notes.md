@@ -2,7 +2,24 @@
 
 Personal job-search tracker that scores opportunities, tracks the application pipeline, and (in later versions) helps tailor resumes and produce weekly reports.
 
-Local-first. CSV storage in V1. Designed to grow without rewriting the core model.
+Local-first. **SQLite is the source of truth in V1.**  
+pandas + matplotlib/seaborn are used for analysis, plots, and reports.  
+Designed to grow without rewriting the core model.
+
+---
+
+## Architecture
+
+```text
+User input / menu
+  → SQL INSERT / UPDATE / SELECT on SQLite (data/jobs.db)
+    → pandas (pd.read_sql) when analysis is needed
+      → matplotlib / seaborn → plots/ and reports/
+```
+
+- **Writes & pipeline updates** → SQLite  
+- **Visuals & reports** → query → DataFrame → plot  
+- Enable foreign keys per connection: `PRAGMA foreign_keys = ON`
 
 ---
 
@@ -24,27 +41,38 @@ Local-first. CSV storage in V1. Designed to grow without rewriting the core mode
 - Application pipeline tracking
 - Rejection history (do not re-apply accidentally)
 - Basic follow-up reminders
-- Simple charts
-- All data local (CSV)
+- Simple charts (SQL → pandas → matplotlib/seaborn)
+- All data local (**SQLite**)
 
 ### Data model
+
+Storage: single database file **`data/jobs.db`**  
+Tables: `user`, `jobs`, `applications`
+
+Suggested SQLite types:
+- integers → `INTEGER`
+- floats → `REAL`
+- strings / dates / JSON-as-text → `TEXT`
+- flags → `INTEGER` (`0`/`1`)
+
+Dates stored as ISO text: `YYYY-MM-DD` (or full datetime when needed).
+
+---
 
 #### `user` table
 Single-row profile for scoring and commute logic.
 
-| Column              | Datatype | Notes |
-|---------------------|----------|--------|
-| user_id             | int      | Primary key (usually `1`) |
-| city                | str      | Home city |
-| state               | str      | Home state |
-| lat                 | float    | Home latitude |
-| lon                 | float    | Home longitude |
-| preferred_pay_min   | float    | Optional target floor (annual or normalized unit) |
-| preferred_pay_max   | float    | Optional target ceiling |
-| max_weekly_commute_miles | float | Soft preference / scoring reference (optional) |
-| notes               | str      | Free text |
-
-**Storage:** `data/user.csv`
+| Column                   | Datatype | Notes |
+|--------------------------|----------|--------|
+| user_id                  | INTEGER  | Primary key (usually `1`) |
+| city                     | TEXT     | Home city |
+| state                    | TEXT     | Home state |
+| lat                      | REAL     | Home latitude |
+| lon                      | REAL     | Home longitude |
+| preferred_pay_min        | REAL     | Optional target floor (annual or normalized unit) |
+| preferred_pay_max        | REAL     | Optional target ceiling |
+| max_weekly_commute_miles | REAL     | Soft preference / scoring reference (optional) |
+| notes                    | TEXT     | Free text |
 
 ---
 
@@ -53,35 +81,34 @@ Opportunity pool (jobs you might apply to).
 
 | Column                  | Datatype | Notes |
 |-------------------------|----------|--------|
-| job_id                  | str/int  | Primary key (UUID or incremental) |
-| title                   | str      | Job title |
-| company                 | str      | Company name |
-| level                   | str      | e.g. `junior`, `mid`, `senior`, `staff` (normalize) |
-| employment_type         | str      | `full_time`, `part_time`, `contract`, `internship` |
-| remote_policy           | str      | `onsite`, `hybrid`, `remote` |
-| pay_min                 | float    | Lower end of range (use same unit everywhere) |
-| pay_max                 | float    | Upper end of range (nullable if unknown) |
-| pay_type                | str      | `salary`, `hourly` (normalize before scoring if mixed) |
-| location_city           | str      | Office / listed city |
-| location_state          | str      | |
-| office_lat              | float    | Nullable; required for accurate commute if not remote |
-| office_lon              | float    | Nullable |
-| days_in_office_per_week | float    | `0` for remote; `1–5` for hybrid/onsite |
-| one_way_commute_miles   | float    | Manual or calculated; `0` if remote |
-| weekly_commute_miles    | float    | Derived: `one_way_commute_miles * 2 * days_in_office_per_week` |
-| skills                  | str      | Comma-separated or JSON-like list (V1 simple string OK) |
-| manual_match            | int      | **1–10** user estimate of skill/level/background fit |
-| job_score               | float    | Final weighted score (0–100 recommended) |
-| score_pay               | float    | Component score (for transparency / tuning) |
-| score_commute           | float    | Component score |
-| score_match             | float    | Component score |
-| source_url              | str      | Listing URL (nullable in pure manual mode) |
-| date_posted             | str      | ISO date `YYYY-MM-DD` (nullable) |
-| date_added              | str      | ISO date when you added it |
-| raw_data_path           | str      | Path to saved full text / notes file (nullable in V1) |
-| notes                   | str      | Free text |
+| job_id                  | TEXT     | Primary key (UUID or string id) |
+| title                   | TEXT     | Job title |
+| company                 | TEXT     | Company name |
+| level                   | TEXT     | e.g. `junior`, `mid`, `senior`, `staff` (normalize) |
+| employment_type         | TEXT     | `full_time`, `part_time`, `contract`, `internship` |
+| remote_policy           | TEXT     | `onsite`, `hybrid`, `remote` |
+| pay_min                 | REAL     | Lower end of range (use same unit everywhere) |
+| pay_max                 | REAL     | Upper end of range (nullable if unknown) |
+| pay_type                | TEXT     | `salary`, `hourly` (normalize before scoring if mixed) |
+| location_city           | TEXT     | Office / listed city |
+| location_state          | TEXT     | |
+| office_lat              | REAL     | Nullable; needed for accurate commute if not remote |
+| office_lon              | REAL     | Nullable |
+| days_in_office_per_week | REAL     | `0` for remote; `1–5` for hybrid/onsite |
+| one_way_commute_miles   | REAL     | Manual or calculated; `0` if remote |
+| weekly_commute_miles    | REAL     | Derived: `one_way * 2 * days_in_office_per_week` |
+| skills                  | TEXT     | Comma-separated or JSON text (V1 simple string OK) |
+| manual_match            | INTEGER  | **1–10** user estimate of skill/level/background fit |
+| job_score               | REAL     | Final weighted score (0–100 recommended) |
+| score_pay               | REAL     | Component score (transparency / tuning) |
+| score_commute           | REAL     | Component score |
+| score_match             | REAL     | Component score |
+| source_url              | TEXT     | Listing URL (nullable in pure manual mode) |
+| date_posted             | TEXT     | ISO date `YYYY-MM-DD` (nullable) |
+| date_added              | TEXT     | ISO date when you added it |
+| raw_data_path           | TEXT     | Path to saved full text / notes file (nullable in V1) |
+| notes                   | TEXT     | Free text |
 
-**Storage:** `data/jobs.csv`  
 **Local raw dumps (optional):** `data/raw/`
 
 ---
@@ -91,23 +118,23 @@ Pipeline of jobs you plan to apply to, have applied to, or have finished.
 
 | Column            | Datatype | Notes |
 |-------------------|----------|--------|
-| application_id    | str/int  | Primary key |
-| job_id            | str/int  | FK → jobs.job_id |
-| title             | str      | Denormalized for readable CSV (optional but handy) |
-| company           | str      | Denormalized |
-| job_score         | float    | Snapshot at time of tracking (or joined live) |
-| status            | str      | See status values below |
-| applied_date      | str      | ISO date (nullable until applied) |
-| last_contact_date | str      | ISO date |
-| next_follow_up    | str      | ISO date – drives reminders |
-| interview_stage   | int      | `0` = none, `1` = first, `2` = second, … |
-| offer_date        | str      | ISO date (nullable) |
-| offer_pay         | float    | Actual offer if different from listing |
-| rejected_by       | str      | `employer`, `self`, or empty |
-| notes             | str      | Interview notes, contacts, etc. |
-| archived          | bool/int | `0/1` – hide from active views without deleting |
+| application_id    | TEXT     | Primary key |
+| job_id            | TEXT     | FK → `jobs.job_id` |
+| title             | TEXT     | Optional denormalized copy (handy for quick lists) |
+| company           | TEXT     | Optional denormalized copy |
+| job_score         | REAL     | Snapshot at track time (or join live from `jobs`) |
+| status            | TEXT     | See status values below |
+| applied_date      | TEXT     | ISO date (nullable until applied) |
+| last_contact_date | TEXT     | ISO date |
+| next_follow_up    | TEXT     | ISO date – drives reminders |
+| interview_stage   | INTEGER  | `0` = none, `1` = first, `2` = second, … |
+| offer_date        | TEXT     | ISO date (nullable) |
+| offer_pay         | REAL     | Actual offer if different from listing |
+| rejected_by       | TEXT     | `employer`, `self`, or empty |
+| notes             | TEXT     | Interview notes, contacts, etc. |
+| archived          | INTEGER  | `0/1` – hide from active views without deleting |
 
-**Recommended `status` values (use one field, not many booleans):**  
+**Recommended `status` values (one field, not many booleans):**  
 `saved` | `applied` | `interviewing` | `offered` | `accepted` | `rejected_employer` | `rejected_self` | `withdrawn`
 
 **Rejection policy (V1):**  
@@ -115,7 +142,9 @@ Keep the row. Set status to `rejected_*` (and optionally `archived = 1`).
 Do **not** delete – preserves history and prevents accidental re-apply.  
 Active views sort by `job_score` desc and filter out terminal/archived statuses as needed.
 
-**Storage:** `data/applications.csv`
+**Foreign key:**  
+`FOREIGN KEY (job_id) REFERENCES jobs(job_id)`  
+Must enable: `PRAGMA foreign_keys = ON` on each connection.
 
 ---
 
@@ -151,6 +180,8 @@ Store the three component scores plus `job_score` on the job row.
 
 Missing office location on hybrid/onsite → treat commute as incomplete (neutral or low) until filled.
 
+Scoring runs in Python before `INSERT`/`UPDATE` (compute values, then write to SQLite).
+
 ---
 
 ### V1 features
@@ -159,22 +190,25 @@ Missing office location on hybrid/onsite → treat commute as incomplete (neutra
 Python function(s) to:
 - prompt or accept fields
 - compute `weekly_commute_miles` and `job_score`
-- append/update `data/jobs.csv`
+- `INSERT` into `jobs` (parameterized SQL)
 
 #### Application tracking
 - Link via `job_id`
-- Update `status`, dates, `next_follow_up`, notes
-- List active applications sorted by score / follow-up date
+- `UPDATE` `status`, dates, `next_follow_up`, notes
+- List active applications with SQL (`ORDER BY job_score DESC`, filter status/archived)
+- Optional `JOIN jobs` for live title/company/score
 
 #### Follow-up reminders
-Function that scans `applications` for:
-- `next_follow_up <= today`
+SQL scan of `applications` for:
+- `next_follow_up <= date('now')` (or pass today’s date from Python)
 - post-application and post-interview cadences (user-set or simple defaults)
 
 Output: console list or small checklist (calendar/email can wait).
 
 #### Charts
-Use matplotlib or seaborn. Write PNGs to `plots/`.
+1. `pd.read_sql(...)` from SQLite  
+2. matplotlib / seaborn  
+3. Write PNGs to `plots/`
 
 Suggested V1 plots:
 - Applications over time (count by week/month)
@@ -189,9 +223,7 @@ Suggested V1 plots:
 ### V1 storage & folders created by the program
 ```text
 data/
-  user.csv
-  jobs.csv
-  applications.csv
+  jobs.db           # SQLite source of truth
   raw/              # optional text dumps
 plots/              # png charts
 ```
@@ -209,27 +241,29 @@ plots/              # png charts
 
 ### Data model additions / extensions
 
+Same SQLite database; alter/extend tables as needed.
+
 #### `user` table (extended)
-| Column           | Datatype | Notes |
-|------------------|----------|--------|
-| skills           | str/JSON | List of skills |
-| experience_summary | str    | Short background text |
-| experience_years | float    | Optional |
-| preferences      | str/JSON | Schedule, remote preference, must-have skills, etc. |
-| resume_base_path | str      | Path to master resume / template data |
+| Column             | Datatype | Notes |
+|--------------------|----------|--------|
+| skills             | TEXT     | List of skills (JSON text OK) |
+| experience_summary | TEXT     | Short background text |
+| experience_years   | REAL     | Optional |
+| preferences        | TEXT     | Schedule, remote preference, must-haves (JSON text OK) |
+| resume_base_path   | TEXT     | Path to master resume / template data |
 
 #### `jobs` table (extended)
-| Column              | Datatype | Notes |
-|---------------------|----------|--------|
-| scraped_keywords    | str/JSON | Keywords extracted from listing |
-| raw_html_path / raw_text_path | str | Full saved listing |
-| fit_score_auto      | float    | Optional automated skill overlap score |
-| last_scraped        | str      | ISO datetime |
+| Column                | Datatype | Notes |
+|-----------------------|----------|--------|
+| scraped_keywords      | TEXT     | Keywords extracted from listing |
+| raw_html_path         | TEXT     | Full saved listing (or raw_text_path) |
+| fit_score_auto        | REAL     | Optional automated skill overlap score |
+| last_scraped          | TEXT     | ISO datetime |
 
 Manual `manual_match` can remain as an override or blend with `fit_score_auto`.
 
 #### New supporting ideas (optional)
-- `skills` reference list or simple junction later if you outgrow comma-separated strings
+- `skills` reference table or junction if you outgrow string lists
 - Dedup key (company + title + location hash) to avoid duplicate jobs from multiple sources
 
 ---
@@ -239,7 +273,7 @@ Manual `manual_match` can remain as an override or blend with `fit_score_auto`.
 #### Job intake
 - **Manual** (still supported for odd listings)
 - **URL input** → scrape title, company, pay, location, description, keywords  
-- Review/edit before commit to `jobs` table  
+- Review/edit before `INSERT` into `jobs`  
 - Respect site terms; prefer official APIs when available; treat scrape as best-effort
 
 #### Stronger scoring
@@ -253,7 +287,7 @@ Manual `manual_match` can remain as an override or blend with `fit_score_auto`.
 - **Storage:** `resumes/` (e.g. `resumes/{job_id}_{company}.pdf`)
 
 #### Weekly reports
-- Pull charts + summary stats (applied, response rate, interviews, top open scores, follow-ups due)
+- Pull charts + summary stats via SQL → pandas  
 - Output: HTML or PDF  
 - **Storage:** `reports/`
 
@@ -273,17 +307,18 @@ star_hound_tracker/          # or repo root
 ├── requirements.txt
 ├── images/                  # static assets if any
 ├── python/                  # modules
-│   ├── storage.py           # load/save CSVs (later SQLite)
-│   ├── models.py            # column helpers / validation
+│   ├── db.py                # connect, init schema, PRAGMA foreign_keys=ON
+│   ├── models.py            # schema helpers / validation
 │   ├── scoring.py           # commute + weighted score
-│   ├── jobs.py              # add/update/list jobs
-│   ├── applications.py      # pipeline + status updates
-│   ├── reminders.py         # follow-up scan
-│   ├── viz.py               # charts
+│   ├── jobs.py              # add/update/list jobs (SQL)
+│   ├── applications.py      # pipeline + status updates (SQL)
+│   ├── reminders.py         # follow-up scan (SQL)
+│   ├── viz.py               # read_sql → charts
 │   ├── scrape.py            # V2
 │   ├── resume.py            # V2
 │   └── report.py            # V2
 ├── data/                    # created at runtime (gitignored)
+│   └── jobs.db
 ├── plots/                   # created at runtime
 ├── resumes/                 # V2
 └── reports/                 # V2
@@ -296,13 +331,13 @@ star_hound_tracker/          # or repo root
 ## Implementation order (recommended)
 
 **V1 MVP**
-1. Create `data/` + empty CSVs with headers  
-2. User profile load/save  
-3. Add job (manual) + commute calculation + score  
-4. Applications CRUD + status updates  
-5. List top jobs / active applications  
+1. Create `data/` + `init_db()` (`CREATE TABLE IF NOT EXISTS ...`)  
+2. User profile insert/update/select  
+3. Add job (manual) + commute calculation + score → `INSERT`  
+4. Applications CRUD + status updates via SQL  
+5. List top jobs / active applications (`SELECT` / `JOIN`)  
 6. Follow-up scan  
-7. A few charts  
+7. A few charts (`pd.read_sql` → matplotlib/seaborn → `plots/`)
 
 **Then V2**
 8. URL scrape + review step  
@@ -314,9 +349,12 @@ star_hound_tracker/          # or repo root
 ---
 
 ## Design principles
+- SQLite is the **source of truth**; pandas is for analysis and plotting.
 - Prefer **status + dates** over many independent booleans.
 - **Never delete** rejected jobs; archive or filter.
 - Store **score components** so weights can be tuned.
 - Keep V1 useful without scraping or NLP.
 - Normalize enums early (`remote_policy`, `status`, `level`, `employment_type`).
+- Use **parameterized SQL** (`?` placeholders) for all inputs.
+- Enable **foreign keys** on every connection.
 - Everything personal stays local and gitignored.

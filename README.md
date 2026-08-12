@@ -24,6 +24,8 @@ Star Hound Tracker helps you:
 
 Everything runs locally. Your data stays on your machine.
 
+**Architecture:** SQLite is the source of truth. pandas + matplotlib/seaborn are used for analysis, plots, and reports.
+
 ---
 
 ## Features
@@ -36,7 +38,7 @@ Everything runs locally. Your data stays on your machine.
 - [ ] Application pipeline with clear statuses
 - [ ] Follow-up reminders
 - [ ] Basic charts (applications, outcomes, scores)
-- [ ] CSV storage under `data/`
+- [ ] SQLite database under `data/` (source of truth)
 
 ### Version 2 (planned)
 - [ ] URL / scrape-assisted job intake
@@ -58,11 +60,11 @@ _Coming soon._
 ## Tech stack
 
 - Python 3.14.4
-- pandas (data handling)
+- SQLite (local source of truth via `sqlite3`)
+- pandas (query results, analysis, report tables)
 - matplotlib / seaborn (charts)
-- geopandas 
+- geopandas
 - Jupyter notebook for prototyping
-- CSV storage (SQLite possible later)
 
 _Optional later:_ scraping libraries, HTML/PDF resume & report tooling
 
@@ -73,8 +75,9 @@ _Optional later:_ scraping libraries, HTML/PDF resume & report tooling
 ```text
 ├── job_tracker.ipynb      # Prototyping
 ├── job_tracker.py         # Main entry point
-├── python/                # Modules (scoring, storage, viz, ...)
-├── data/                  # Local CSVs (gitignored)
+├── python/                # Modules (db, scoring, jobs, viz, ...)
+├── data/                  # Local database (gitignored)
+│   └── jobs.db            # SQLite source of truth
 ├── plots/                 # Generated charts (gitignored)
 ├── resumes/               # V2 – generated resumes
 ├── reports/               # V2 – weekly reports
@@ -103,7 +106,8 @@ source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-> `data/`, `plots/`, `resumes/`, and `reports/` are created by the program when needed.
+> `data/`, `plots/`, `resumes/`, and `reports/` are created by the program when needed.  
+> The SQLite database is initialized automatically on first run.
 
 ---
 
@@ -121,12 +125,26 @@ python job_tracker.py
 
 Typical V1 flow:
 1. Set or update your user profile (home lat/lon, pay preferences)
-2. Add jobs manually
+2. Add jobs manually (stored in SQLite)
 3. Review scores and move roles into the applications pipeline
 4. Update status and follow-up dates as you progress
-5. Generate charts when you want a snapshot
+5. Pull data into pandas and generate charts when you want a snapshot
 
 _Detailed CLI/menu commands will be documented here as they land._
+
+---
+
+## Data flow
+
+```text
+User input / menu
+  → SQL INSERT / UPDATE / SELECT on SQLite
+    → pandas (pd.read_sql) for analysis
+      → matplotlib / seaborn → plots/ and reports
+```
+
+- **Writes and pipeline updates** go through SQLite  
+- **Visuals and reports** load query results into DataFrames with pandas  
 
 ---
 
@@ -147,9 +165,10 @@ Component scores are stored so weights can be tuned later.
 
 ## Data & privacy
 
-- All data is stored **locally** (CSV files under `data/`)
+- All data is stored **locally** in SQLite (`data/jobs.db`)
 - `data/`, `plots/`, `resumes/`, and `reports/` should remain gitignored
 - Do not commit personal info, resumes, or scraped listing dumps
+- Foreign keys can be enforced in SQLite with `PRAGMA foreign_keys = ON`
 
 ---
 
@@ -158,9 +177,9 @@ Component scores are stored so weights can be tuned later.
 See [`notes.md`](notes.md) for full schema, column types, and design decisions.
 
 **Near term**
-- Lock V1 schemas (`user`, `jobs`, `applications`)
-- Implement scoring + CRUD flows
-- Follow-ups + first charts
+- Lock V1 SQLite schemas (`user`, `jobs`, `applications`)
+- Implement scoring + CRUD flows via SQL
+- Follow-ups + first charts (SQL → pandas → plots)
 
 **Later**
 - Scrape-assisted intake
