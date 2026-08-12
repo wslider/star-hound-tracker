@@ -57,9 +57,10 @@ _Coming soon._
 
 ## Tech stack
 
-- Python 3.x
+- Python 3.14.4
 - pandas (data handling)
 - matplotlib / seaborn (charts)
+- geopandas 
 - Jupyter notebook for prototyping
 - CSV storage (SQLite possible later)
 
