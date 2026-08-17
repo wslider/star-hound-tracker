@@ -9,7 +9,7 @@ def main():
     init_db()          # creates data/jobs.db + tables if needed
 
     # Temporary simple flow while we build
-    print("Database ready.")
+    print("Database ready. Let the job hunting begin!")
     # TODO: user selection / creation
     # TODO: main menu loop
 

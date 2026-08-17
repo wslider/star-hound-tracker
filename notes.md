@@ -317,6 +317,7 @@ star_hound_tracker/          # or repo root
 │   ├── scrape.py            # V2
 │   ├── resume.py            # V2
 │   └── report.py            # V2
+|   └── users.py             # V1 one user / V2 will allow multiple users 
 ├── data/                    # created at runtime (gitignored)
 │   └── jobs.db
 ├── plots/                   # created at runtime
