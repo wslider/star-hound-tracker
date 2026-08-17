@@ -65,6 +65,7 @@ Single-row profile for scoring and commute logic.
 | Column                   | Datatype | Notes |
 |--------------------------|----------|--------|
 | user_id                  | INTEGER  | Primary key (usually `1`) |
+| name                     | TEXT     | ser name |
 | city                     | TEXT     | Home city |
 | state                    | TEXT     | Home state |
 | lat                      | REAL     | Home latitude |

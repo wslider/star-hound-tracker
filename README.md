@@ -1,3 +1,4 @@
+```markdown
 # Star Hound Tracker
 
 <p align="center">
@@ -8,6 +9,7 @@ Local-first job search tracker. Score opportunities, manage your application pip
 
 **Author:** William Slider  
 **Status:** Early development / Version 1 in progress  
+**Current focus:** User profile complete · next up: scoring + manual job entry  
 **License:** MIT
 
 ---
@@ -31,14 +33,14 @@ Everything runs locally. Your data stays on your machine.
 ## Features
 
 ### Version 1 (current target)
-- [ ] User profile (home location + pay preferences)
+- [x] User profile (home location + pay preferences)
 - [ ] Manual job entry
 - [ ] Job scoring (pay, weekly commute, manual fit 1–10)
 - [ ] Remote / hybrid / onsite commute handling
 - [ ] Application pipeline with clear statuses
 - [ ] Follow-up reminders
 - [ ] Basic charts (applications, outcomes, scores)
-- [ ] SQLite database under `data/` (source of truth)
+- [x] SQLite database under `data/` (source of truth)
 
 ### Version 2 (planned)
 - [ ] URL / scrape-assisted job intake
@@ -73,17 +75,24 @@ _Optional later:_ scraping libraries, HTML/PDF resume & report tooling
 ## Project structure
 
 ```text
-├── job_tracker.ipynb      # Prototyping
-├── job_tracker.py         # Main entry point
-├── python/                # Modules (db, scoring, jobs, viz, ...)
-├── data/                  # Local database (gitignored)
-│   └── jobs.db            # SQLite source of truth
-├── plots/                 # Generated charts (gitignored)
-├── resumes/               # V2 – generated resumes
-├── reports/               # V2 – weekly reports
+├── job_tracker.ipynb          # Prototyping & testing (local)
+├── job_tracker.py             # Main CLI entry point (in progress)
+├── python/
+│   ├── db.py                  # Database connection & schema
+│   ├── users.py               # User profile CRUD
+│   ├── scoring.py             # (next)
+│   ├── jobs.py
+│   ├── applications.py
+│   ├── reminders.py
+│   ├── viz.py
+│   └── ...
+├── data/                      # Local database (gitignored)
+│   └── jobs.db                # SQLite source of truth
+├── plots/                     # Generated charts (gitignored)
+├── resumes/                   # V2 – generated resumes
+├── reports/                   # V2 – weekly reports
 ├── images/
 │   └── star_hound_tracker_logo_v1.png
-├── notes.md               # Design notes
 ├── requirements.txt
 ├── LICENSE
 └── README.md
@@ -96,11 +105,11 @@ _Optional later:_ scraping libraries, HTML/PDF resume & report tooling
 ```bash
 # Clone the repo
 git clone <repo-url>
-cd star-hound-tracker   # or your folder name
+cd star-hound-tracker
 
 # (Recommended) create a virtual environment
 python -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
@@ -124,11 +133,11 @@ python job_tracker.py
 ```
 
 Typical V1 flow:
-1. Set or update your user profile (home lat/lon, pay preferences)
+1. Set or update your user profile (home location, pay preferences)
 2. Add jobs manually (stored in SQLite)
 3. Review scores and move roles into the applications pipeline
 4. Update status and follow-up dates as you progress
-5. Pull data into pandas and generate charts when you want a snapshot
+5. Generate charts when you want a snapshot
 
 _Detailed CLI/menu commands will be documented here as they land._
 
@@ -168,18 +177,18 @@ Component scores are stored so weights can be tuned later.
 - All data is stored **locally** in SQLite (`data/jobs.db`)
 - `data/`, `plots/`, `resumes/`, and `reports/` should remain gitignored
 - Do not commit personal info, resumes, or scraped listing dumps
-- Foreign keys can be enforced in SQLite with `PRAGMA foreign_keys = ON`
+- Foreign keys are enforced with `PRAGMA foreign_keys = ON`
 
 ---
 
 ## Roadmap
 
-See [`notes.md`](notes.md) for full schema, column types, and design decisions.
-
 **Near term**
-- Lock V1 SQLite schemas (`user`, `jobs`, `applications`)
-- Implement scoring + CRUD flows via SQL
-- Follow-ups + first charts (SQL → pandas → plots)
+- [x] Lock V1 SQLite schemas (`user`, `jobs`, `applications`)
+- [x] User profile module
+- [ ] Scoring + manual job entry
+- [ ] Application pipeline + follow-ups
+- [ ] First charts (SQL → pandas → plots)
 
 **Later**
 - Scrape-assisted intake
@@ -199,3 +208,4 @@ Personal project for now. Suggestions and issue reports are welcome if the repo 
 MIT License
 
 Copyright (c) 2026 William Slider
+```
