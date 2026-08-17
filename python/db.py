@@ -24,6 +24,7 @@ def init_db():
         conn.executescript("""
         CREATE TABLE IF NOT EXISTS user (
             user_id INTEGER PRIMARY KEY,
+            name TEXT, 
             city TEXT,
             state TEXT,
             lat REAL,
