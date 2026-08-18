@@ -188,12 +188,11 @@ def prompt_add_application(user_id: int = 1) -> str | None:
     """
     Interactive flow:
     1. Show top jobs that are not yet in the application pipeline
-    2. Let user pick a job_id
+    2. Let user pick by number (or type the job_id)
     3. Create the application
     """
     print("\n=== Add Application ===\n")
 
-    # Show jobs that don’t already have an active application
     existing_job_ids = {
         app["job_id"] for app in list_applications(include_archived=False)
     }
@@ -208,14 +207,31 @@ def prompt_add_application(user_id: int = 1) -> str | None:
         return None
 
     print("Available jobs (not yet in pipeline):\n")
-    for job in available_jobs:
-        print(f"  {job['job_id']}  |  {job['job_score']:5.1f}  |  {job['title']} @ {job['company']}")
+    for i, job in enumerate(available_jobs, start=1):
+        print(f"  {i:2}. {job['job_score']:5.1f}  |  {job['title']} @ {job['company']}")
+        print(f"      ID: {job['job_id']}")
 
     print()
-    job_id = _ask("Enter job_id to track: ", allow_empty=False)
+    choice = input("Enter number (or full job_id): ").strip()
 
-    status = _ask("Starting status (default = saved): ") or "saved"
-    notes = _ask("Notes: ")
+    if not choice:
+        print("Cancelled.")
+        return None
+
+    # Try to interpret as a list number first
+    job_id = None
+    if choice.isdigit():
+        idx = int(choice) - 1
+        if 0 <= idx < len(available_jobs):
+            job_id = available_jobs[idx]["job_id"]
+        else:
+            print("Invalid number.")
+            return None
+    else:
+        job_id = choice  # assume they typed the full job_id
+
+    status = input("Starting status (default = saved): ").strip() or "saved"
+    notes = input("Notes: ").strip() or None
 
     try:
         app_id = add_application(
