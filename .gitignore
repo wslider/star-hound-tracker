@@ -21,9 +21,6 @@ db_backups/
 notes.md
 notes.ipynb
 notebooks/.cache.sqlite
-
-*.ipynb
-
 job_tracker.ipynb
 
 # Local config that may contain personal paths or preferences

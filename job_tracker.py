@@ -2,7 +2,6 @@
 Star Hound Tracker – Main CLI
 """
 
-
 from python.db import init_db
 from python.users import prompt_create_user, prompt_update_user, get_user
 from python.jobs import prompt_add_job, list_jobs
