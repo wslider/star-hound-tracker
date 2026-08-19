@@ -2,11 +2,13 @@
 Star Hound Tracker – Main CLI
 """
 
+
 from python.db import init_db
 from python.users import prompt_create_user, prompt_update_user, get_user
 from python.jobs import prompt_add_job, list_jobs
 from python.applications import prompt_add_application, list_applications
 from python.reminders import print_followup_report, prompt_complete_followup
+from python.backup import backup_all_tables
 
 
 def show_main_menu():
@@ -20,6 +22,7 @@ def show_main_menu():
     print("5. List active applications")
     print("6. Follow-up reminders")
     print("7. Complete a follow-up")
+    print("8. Save Data")
     print("0. Exit")
     print("=" * 40)
 
@@ -78,6 +81,9 @@ def main():
 
         elif choice == "7":
             prompt_complete_followup()
+
+        elif choice == "8": 
+            backup_all_tables() 
 
         elif choice == "0":
             print("\nGood luck with the hunt! 🐶")
