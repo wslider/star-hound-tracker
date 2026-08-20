@@ -4,7 +4,7 @@
   <img src="images/star_hound_tracker_logo_v1.png" alt="Star Hound Tracker Logo" width="320">
 </p>
 
-## Local-first Job Jearch Tracker 
+## Local-first Job Search Tracker 
 
 Score opportunities, manage your application pipeline, and (later) generate tailored resumes and weekly reports.
 
