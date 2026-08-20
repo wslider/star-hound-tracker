@@ -2,24 +2,36 @@ import os
 import sqlite3
 from pathlib import Path
 
+# Default path for real data
 DB_PATH = Path("data") / "jobs.db"
 
-def get_connection():
-    # Make sure parent folder exists before connecting
-    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    
-    conn = sqlite3.connect(DB_PATH)
+
+def get_connection(db_path: Path | str | None = None):
+    """
+    Return a connection.
+    If db_path is given, use it; otherwise use the default DB_PATH.
+    """
+    path = Path(db_path) if db_path is not None else DB_PATH
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    conn = sqlite3.connect(path)
     conn.execute("PRAGMA foreign_keys = ON")
-    
-    conn.row_factory = sqlite3.Row          # allows dict-like access
+    conn.row_factory = sqlite3.Row
     return conn
 
-def init_db():
-    # Create necessary folders
-    for path in ["data", "data/raw", "plots", "reports", "resumes"]:
-        os.makedirs(path, exist_ok=True)
 
-    conn = get_connection()
+def init_db(db_path: Path | str | None = None):
+    """
+    Create folders + tables.
+    Pass a custom db_path for sample/demo databases.
+    """
+    path = Path(db_path) if db_path is not None else DB_PATH
+
+    # Create necessary folders
+    for folder in ["data", "data/raw", "plots", "reports", "resumes", "samples"]:
+        os.makedirs(folder, exist_ok=True)
+
+    conn = get_connection(path)
     try:
         conn.executescript("""
         CREATE TABLE IF NOT EXISTS user (
@@ -84,7 +96,7 @@ def init_db():
         );
         """)
         conn.commit()
-        print(f"Database ready: {DB_PATH}")
+        print(f"Database ready: {path}")
     finally:
         conn.close()
 
