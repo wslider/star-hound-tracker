@@ -171,8 +171,9 @@ def generate():
 
     print("\n=== Sample data ready! ===")
     print(f"Database : {SAMPLE_DB}")
-    print("You can now build viz.py and point it at this database + samples/sample_plots/")
-    print("When viz.py exists, just add the plotting calls at the bottom of this file.")
+
+    # Build viz.py and point it at this database + samples/sample_plots/
+    # add the plotting calls at the bottom of this file
 
 
 if __name__ == "__main__":
