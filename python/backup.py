@@ -2,7 +2,12 @@
 python/backup.py
 ----------------
 Backup all SQLite tables to CSV files.
-Structure: db_backups/YYYY-MM-DD/table_HHMMSS.csv
+
+Default (real data):
+    db_backups/YYYY-MM-DD/table_HHMMSS.csv
+
+Sample data:
+    samples/sample_backup_data/YYYY-MM-DD/table_HHMMSS.csv
 """
 
 from __future__ import annotations
@@ -14,29 +19,36 @@ import pandas as pd
 
 from python.db import get_connection
 
-BACKUP_DIR = Path("db_backups")
+# Default locations
+DEFAULT_BACKUP_DIR = Path("db_backups")
+SAMPLE_BACKUP_DIR = Path("samples/sample_backup_data")
 
 
-def backup_all_tables() -> None:
+def backup_all_tables(
+    db_path: Path | str | None = None,
+    backup_dir: Path | str | None = None,
+) -> None:
     """
     Export every table to CSV files, organized by day.
-    
-    Example:
-        db_backups/
-          2026-08-19/
-            user_105130.csv
-            jobs_105130.csv
-            applications_105130.csv
+
+    Parameters
+    ----------
+    db_path : optional
+        Path to the SQLite database. Defaults to the real data/jobs.db.
+    backup_dir : optional
+        Folder where the dated subfolders will be created.
+        Defaults to db_backups/ for real data.
     """
+    # Resolve paths
+    backup_root = Path(backup_dir) if backup_dir is not None else DEFAULT_BACKUP_DIR
+
     now = datetime.now()
-    
-    # Create day folder: db_backups/2026-08-19/
-    day_folder = BACKUP_DIR / now.strftime("%Y-%m-%d")
+    day_folder = backup_root / now.strftime("%Y-%m-%d")
     day_folder.mkdir(parents=True, exist_ok=True)
 
-    timestamp = now.strftime("%H%M%S")  # just the time (HHMMSS)
+    timestamp = now.strftime("%H%M%S")
 
-    with get_connection() as conn:
+    with get_connection(db_path) as conn:
         tables = conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';"
         ).fetchall()
@@ -61,5 +73,18 @@ def backup_all_tables() -> None:
     print(f"\nBackup complete → {day_folder}")
 
 
+def backup_sample_data() -> None:
+    """Convenience helper: backup the sample database."""
+    sample_db = Path("samples/sample_jobs.db")
+    backup_all_tables(
+        db_path=sample_db,
+        backup_dir=SAMPLE_BACKUP_DIR,
+    )
+
+
 if __name__ == "__main__":
+    # Default = real data
     backup_all_tables()
+
+    # Uncomment if you also want to backup sample data when run directly
+    backup_sample_data()

@@ -1,0 +1,11 @@
+application_id,job_id,title,company,job_score,status,applied_date,last_contact_date,next_follow_up,interview_stage,offer_date,offer_pay,rejected_by,notes,archived
+5d84cd2d7296,a68cb8ec3249,Senior Data Analyst,BeaverBite Analytics,92.9,saved,,,,0,,,,Sample application #1,0
+55acd8c2bb0a,066548e2e43c,Food Data Scientist,Frosty Fork Labs,62.0,applied,2026-07-23,,2026-07-30,0,,,,Sample application #2,0
+40d4542fbdfa,7287cfa38a95,Analytics Engineer,Maple & Metric,94.7,applied,2026-07-30,,2026-08-06,0,,,,Sample application #3,0
+6818daf12864,8a3cbac6d3d9,Business Intelligence Analyst,Creekside Consumer Co,53.7,interviewing,2026-08-02,,2026-08-10,1,,,,Sample application #4,0
+d4b99a0d84bf,3a19fd156102,Junior Data Analyst,Pawprint Pet Foods,66.2,interviewing,2026-08-06,,2026-08-13,2,,,,Sample application #5,0
+8189c42d48d3,5d6be6dfb38a,Data Analyst,Bluegrass Brewing Data,40.4,offered,2026-08-08,,,3,2026-08-15,142000.0,,Sample application #6,0
+9699ab00b5ae,b3743d4484e5,Marketing Data Analyst,Frozen Falls Marketing,45.0,rejected_employer,2026-07-31,,,0,,,,Sample application #7,0
+23d099472b96,cb410c1169d5,Data Analyst,Oak & Open Data,83.6,rejected_self,2026-08-05,,,0,,,,Sample application #8,0
+95558807ed3e,c919ca6e8745,BI Developer,Oak & Open Data,85.9,applied,2026-08-13,,2026-08-18,0,,,,Sample application #9,0
+27ea5f07761c,81324d276a43,Senior Analyst,Oak & Open Data,67.6,saved,,,,0,,,,Sample application #10,0

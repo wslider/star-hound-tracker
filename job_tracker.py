@@ -7,7 +7,7 @@ from python.users import prompt_create_user, prompt_update_user, get_user
 from python.jobs import prompt_add_job, list_jobs
 from python.applications import prompt_add_application, list_applications
 from python.reminders import print_followup_report, prompt_complete_followup
-from python.backup import backup_all_tables
+from python.backup import backup_all_tables, backup_sample_data
 
 
 def show_main_menu():
@@ -82,7 +82,8 @@ def main():
             prompt_complete_followup()
 
         elif choice == "8": 
-            backup_all_tables() 
+            backup_all_tables()
+            backup_sample_data() 
 
         elif choice == "0":
             print("\nGood luck with the hunt! 🐶")
