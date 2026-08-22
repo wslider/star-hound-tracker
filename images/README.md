@@ -40,10 +40,12 @@ Everything runs locally. Your data stays on your machine.
 - [x] Remote / hybrid / onsite commute handling
 - [x] Application pipeline with clear statuses
 - [x] Follow-up reminders
-- [ ] Basic charts (applications, outcomes, scores)
+- [x] Basic charts (applications, outcomes, scores)
 - [x] SQLite database under `data/` (source of truth)
 - [x] CSV backup system
 - [x] Sample / demo dataset for testing & README screenshots
+- [ ] Complete Jobs Report
+
 
 ### Version 2 (planned)
 - [ ] URL / scrape-assisted job intake
@@ -54,11 +56,24 @@ Everything runs locally. Your data stays on your machine.
 
 ---
 
-## Screenshots
+## Example Outputs
 
-_Coming soon._
+These charts were generated from the included sample dataset (`samples/sample_jobs.db`) featuring the fictional user **Star Hound**.
 
-<!-- Add plots or UI captures under images/ and link them here -->
+### Application Status Breakdown
+![Status Breakdown](images/status_breakdown.png)
+
+### Cumulative Applications Over Time
+![Applications Over Time](images/apps_over_time.png)
+
+### Interview Rate Over Time
+![Interview Rate](images/interview_rate.png)
+
+### Interview Quality (Average Job Score)
+![Interview Quality](images/interview_quality.png)
+
+### Application Funnel
+![Funnel Summary](images/funnel_summary.png)
 
 ---
 

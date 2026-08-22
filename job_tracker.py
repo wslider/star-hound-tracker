@@ -8,6 +8,7 @@ from python.jobs import prompt_add_job, list_jobs
 from python.applications import prompt_add_application, list_applications
 from python.reminders import print_followup_report, prompt_complete_followup
 from python.backup import backup_all_tables, backup_sample_data
+from python.viz import generate_visualizations
 
 
 def show_main_menu():
@@ -22,6 +23,8 @@ def show_main_menu():
     print("6. Follow-up reminders")
     print("7. Complete a follow-up")
     print("8. Save Data")
+    print("9. Generate Visualizations")
+    print("10. Generate Complete Report")
     print("0. Exit")
     print("=" * 40)
 
@@ -83,7 +86,19 @@ def main():
 
         elif choice == "8": 
             backup_all_tables()
-            backup_sample_data() 
+            backup_sample_data()
+
+        elif choice == "9":
+            print("1. Real data charts")
+            print("2. Sample data charts")
+            sub = input("Choice: ").strip()
+            if sub == "1":
+                generate_visualizations(sample=False)
+            else:
+                generate_visualizations(sample=True)
+
+        elif choice == "10":
+            print("Report generation in development.")
 
         elif choice == "0":
             print("\nGood luck with the hunt! 🐶")
