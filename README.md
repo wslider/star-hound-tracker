@@ -1,16 +1,18 @@
 # Star Hound Tracker
 
+*Job hunting doesn’t have to be hard — sniff out and track the right opportunities.*
+
 <p align="center">
-  <img src="images/star_hound_tracker_logo_v1.png" alt="Star Hound Tracker Logo" width="320">
+  <img src="images/star_hound_tracker_logo_v1.png" alt="Star Hound Tracker Logo" width="250">
 </p>
 
-## Local-first Job Search Tracker 
+**Local-first job search tracker**
 
-Score opportunities, manage your application pipeline, and (later) generate tailored resumes and weekly reports.
+Score opportunities, manage your application pipeline, generate weekly reports, and (later) create tailored resumes.
 
 **Author:** William Slider  
 **Status:** Early development / Version 1 in progress  
-**Current focus:** Core modules complete · sample data + visualizations next  
+**Current focus:** Core modules + visualizations complete · reports next  
 **License:** MIT
 
 ---
@@ -45,7 +47,6 @@ Everything runs locally. Your data stays on your machine.
 - [x] CSV backup system
 - [x] Sample / demo dataset for testing & README screenshots
 - [ ] Complete Jobs Report
-
 
 ### Version 2 (planned)
 - [ ] URL / scrape-assisted job intake
@@ -104,7 +105,7 @@ _Optional later:_ scraping libraries, HTML/PDF resume & report tooling
 │   ├── applications.py            # Application pipeline
 │   ├── reminders.py               # Follow-up system
 │   ├── backup.py                  # CSV backups
-│   ├── viz.py                     # Charts (in progress)
+│   ├── viz.py                     # Charts
 │   └── ...
 ├── data/                          # Real user data (gitignored)
 │   └── jobs.db
@@ -222,7 +223,8 @@ Component scores are stored so weights can be tuned later.
 - [x] Application pipeline + follow-ups
 - [x] CSV backup system
 - [x] Sample dataset for demos & testing
-- [ ] First charts (SQL → pandas → plots)
+- [x] First charts (SQL → pandas → plots)
+- [ ] Complete Jobs Report
 
 **Later**
 - Scrape-assisted intake
