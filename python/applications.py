@@ -1,9 +1,3 @@
-"""
-python/applications.py
-----------------------
-Application pipeline management for Star Hound Tracker (V1).
-"""
-
 from __future__ import annotations
 
 import uuid
@@ -244,3 +238,109 @@ def prompt_add_application(user_id: int = 1) -> str | None:
     except ValueError as e:
         print(f"\n✗ Error: {e}")
         return None
+
+def prompt_update_application() -> bool:
+    """
+    Interactive flow to update an existing application.
+    1. Show active applications
+    2. Let user pick by number (or type the application_id)
+    3. Update status, dates, notes, etc.
+    """
+    print("\n=== Update Application ===\n")
+
+    apps = list_applications(include_archived=False, limit=30)
+
+    if not apps:
+        print("No active applications found.")
+        return False
+
+    print("Active applications:\n")
+    for i, app in enumerate(apps, start=1):
+        score = app.get("job_score")
+        score_str = f"{score:5.1f}" if score is not None else "  N/A"
+        print(f"  {i:2}. {score_str}  |  {app['status']:18}  |  {app['title']} @ {app['company']}")
+        print(f"      App ID: {app['application_id']}")
+
+    print()
+    choice = input("Enter number (or full application_id): ").strip()
+
+    if not choice:
+        print("Cancelled.")
+        return False
+
+    # Resolve application_id
+    application_id = None
+    if choice.isdigit():
+        idx = int(choice) - 1
+        if 0 <= idx < len(apps):
+            application_id = apps[idx]["application_id"]
+        else:
+            print("Invalid number.")
+            return False
+    else:
+        application_id = choice
+
+    app = get_application(application_id)
+    if app is None:
+        print(f"Application {application_id} not found.")
+        return False
+
+    print(f"\nUpdating: {app['title']} @ {app['company']}")
+    print(f"Current status: {app['status']}")
+    print("(Press Enter to leave a field unchanged)\n")
+
+    # Collect updates
+    updates = {}
+
+    new_status = input(f"New status {STATUSES}: ").strip()
+    if new_status:
+        if new_status not in STATUSES:
+            print(f"Warning: '{new_status}' is not in the recommended status list.")
+        updates["status"] = new_status
+
+    applied_date = input("Applied date (YYYY-MM-DD): ").strip()
+    if applied_date:
+        updates["applied_date"] = applied_date
+
+    next_follow_up = input("Next follow-up (YYYY-MM-DD): ").strip()
+    if next_follow_up:
+        updates["next_follow_up"] = next_follow_up
+
+    last_contact = input("Last contact date (YYYY-MM-DD): ").strip()
+    if last_contact:
+        updates["last_contact_date"] = last_contact
+
+    interview_stage = input("Interview stage (0, 1, 2...): ").strip()
+    if interview_stage:
+        try:
+            updates["interview_stage"] = int(interview_stage)
+        except ValueError:
+            print("  → Invalid interview stage, skipping.")
+
+    offer_date = input("Offer date (YYYY-MM-DD): ").strip()
+    if offer_date:
+        updates["offer_date"] = offer_date
+
+    offer_pay = input("Offer pay: ").strip()
+    if offer_pay:
+        try:
+            updates["offer_pay"] = float(offer_pay)
+        except ValueError:
+            print("  → Invalid offer pay, skipping.")
+
+    notes = input("Notes: ").strip()
+    if notes:
+        updates["notes"] = notes
+
+    if not updates:
+        print("Nothing to update.")
+        return False
+
+    success = update_application(application_id, **updates)
+
+    if success:
+        print(f"\n✓ Application {application_id} updated.")
+    else:
+        print("\n✗ Update failed.")
+
+    return success

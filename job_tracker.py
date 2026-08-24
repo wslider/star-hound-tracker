@@ -5,7 +5,7 @@ Star Hound Tracker – Main CLI
 from python.db import init_db
 from python.users import prompt_create_user, prompt_update_user, get_user
 from python.jobs import prompt_add_job, list_jobs
-from python.applications import prompt_add_application, list_applications
+from python.applications import prompt_add_application, list_applications, prompt_update_application
 from python.reminders import print_followup_report, prompt_complete_followup
 from python.backup import backup_all_tables, backup_sample_data
 from python.viz import generate_visualizations
@@ -19,12 +19,13 @@ def show_main_menu():
     print("2. Add job")
     print("3. List top jobs")
     print("4. Add application")
-    print("5. List active applications")
-    print("6. Follow-up reminders")
-    print("7. Complete a follow-up")
-    print("8. Save Data")
-    print("9. Generate Visualizations")
-    print("10. Generate Complete Report")
+    print("5. Update application")
+    print("6. List active applications")
+    print("7. Follow-up reminders")
+    print("8. Complete a follow-up")
+    print("9. Save Data")
+    print("10. Generate Visualizations")
+    print("11. Generate Complete Report")
     print("0. Exit")
     print("=" * 40)
 
@@ -71,6 +72,9 @@ def main():
             prompt_add_application()
 
         elif choice == "5":
+            prompt_update_application()
+
+        elif choice == "6":
             apps = list_applications()
             print("\n=== Active Applications ===")
             if not apps:
@@ -78,17 +82,17 @@ def main():
             for app in apps:
                 print(f"{app['status']:18} | {app['title']} @ {app['company']}")
 
-        elif choice == "6":
+        elif choice == "7":
             print_followup_report(days_ahead=10)
 
-        elif choice == "7":
+        elif choice == "8":
             prompt_complete_followup()
 
-        elif choice == "8": 
+        elif choice == "9": 
             backup_all_tables()
             backup_sample_data()
 
-        elif choice == "9":
+        elif choice == "10":
             print("1. Real data charts")
             print("2. Sample data charts")
             sub = input("Choice: ").strip()
@@ -97,7 +101,7 @@ def main():
             else:
                 generate_visualizations(sample=True)
 
-        elif choice == "10":
+        elif choice == "11":
             print("Report generation in development.")
 
         elif choice == "0":

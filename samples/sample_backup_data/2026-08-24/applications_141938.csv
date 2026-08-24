@@ -1,0 +1,11 @@
+application_id,job_id,title,company,job_score,status,applied_date,last_contact_date,next_follow_up,interview_stage,offer_date,offer_pay,rejected_by,notes,archived
+6b6e169a6980,eea5f1c8003e,Senior Data Analyst,BeaverBite Analytics,92.9,saved,,,,0,,,,Sample application #1,0
+28a0e587bc45,be0548631070,Food Data Scientist,Frosty Fork Labs,62.0,applied,2026-07-24,,2026-07-31,0,,,,Sample application #2,0
+5eeafac8f6d4,2468e3d97b5a,Analytics Engineer,Maple & Metric,94.7,applied,2026-07-31,,2026-08-07,0,,,,Sample application #3,0
+18cc82fb5eea,e48ef401e3db,Business Intelligence Analyst,Creekside Consumer Co,53.7,interviewing,2026-08-03,,2026-08-11,2,,,,Sample application #4,0
+258b9350de14,54fec7c65bb7,Junior Data Analyst,Pawprint Pet Foods,66.2,interviewing,2026-08-07,,2026-08-14,2,,,,Sample application #5,0
+d39b93aa05d0,552ff238bbfd,Data Analyst,Bluegrass Brewing Data,40.4,offered,2026-08-09,,,3,2026-08-16,142000.0,,Sample application #6,0
+aba7b9471db6,e35cedb37a30,Marketing Data Analyst,Frozen Falls Marketing,45.0,rejected_employer,2026-08-01,,,0,,,,Sample application #7,0
+46138670a480,072ec23af148,Analytics Specialist,Summit Snack Co,54.4,rejected_self,2026-08-06,,,0,,,,Sample application #8,0
+5f8f65a430dc,198e68c35422,Analytics Specialist,Lumen Food Tech,56.7,applied,2026-08-14,,2026-08-19,0,,,,Sample application #9,0
+e17bad18a0c1,a1264d580d83,BI Developer,Lumen Food Tech,91.0,saved,,,,0,,,,Sample application #10,0
