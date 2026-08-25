@@ -224,6 +224,7 @@ def prompt_add_application(user_id: int = 1) -> str | None:
     else:
         job_id = choice  # assume they typed the full job_id
 
+    print(f"Status Options = {STATUSES}")
     status = input("Starting status (default = saved): ").strip() or "saved"
     notes = input("Notes: ").strip() or None
 
@@ -292,7 +293,9 @@ def prompt_update_application() -> bool:
     # Collect updates
     updates = {}
 
-    new_status = input(f"New status {STATUSES}: ").strip()
+    print(f"Recommended statuses: {', '.join(STATUSES)}")
+    new_status = input(f"New status: ").strip()
+    
     if new_status:
         if new_status not in STATUSES:
             print(f"Warning: '{new_status}' is not in the recommended status list.")

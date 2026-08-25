@@ -72,6 +72,7 @@ def plot_status_breakdown(sample: bool = False) -> Path:
     ax.set_title("Application Status Breakdown")
     ax.set_xlabel("")
     ax.set_ylabel("Count")
+    sns.despine()
     plt.xticks(rotation=30, ha="right")
 
     return _save_fig(fig, "status_breakdown", sample=sample)
@@ -99,6 +100,8 @@ def plot_applications_over_time(sample: bool = False) -> Path:
     ax.set_title("Cumulative Applications Over Time")
     ax.set_xlabel("Date")
     ax.set_ylabel("Total Applications")
+    plt.gca().spines['top'].set_visible(False)
+    plt.gca().spines['right'].set_visible(False)
     fig.autofmt_xdate()
 
     return _save_fig(fig, "apps_over_time", sample=sample)
@@ -130,6 +133,8 @@ def plot_interview_rate_over_time(sample: bool = False) -> Path:
     ax.set_xlabel("Month")
     ax.set_ylabel("Interview Rate %")
     ax.set_ylim(0, 100)
+    plt.gca().spines['top'].set_visible(False)
+    plt.gca().spines['right'].set_visible(False)
     plt.xticks(rotation=45, ha="right")
 
     return _save_fig(fig, "interview_rate", sample=sample)
@@ -156,6 +161,7 @@ def plot_interview_quality(sample: bool = False) -> Path:
 
     fig, ax = plt.subplots(figsize=(8, 6))
     sns.barplot(data=df, x="category", y="avg_score", ax=ax, palette="viridis")
+    sns.despine()
     ax.set_title("Average Job Score: Interviewed vs All")
     ax.set_ylabel("Average Job Score")
     ax.set_xlabel("")
@@ -184,6 +190,7 @@ def plot_funnel_summary(sample: bool = False) -> Path:
 
     fig, ax = plt.subplots(figsize=(10, 6))
     sns.barplot(data=df, x="count", y="status", ax=ax, palette="magma")
+    sns.despine()
     ax.set_title("Application Funnel")
     ax.set_xlabel("Count")
     ax.set_ylabel("")
