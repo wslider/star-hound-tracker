@@ -9,6 +9,7 @@ from python.applications import prompt_add_application, list_applications, promp
 from python.reminders import print_followup_report, prompt_complete_followup
 from python.backup import backup_all_tables, backup_sample_data
 from python.viz import generate_visualizations
+from python.report import generate_report
 
 
 def show_main_menu():
@@ -102,7 +103,16 @@ def main():
                 generate_visualizations(sample=True)
 
         elif choice == "11":
-            print("Report generation in development.")
+            print("1. Real data report")
+            print("2. Sample data report")
+            sub = input("Choice: ").strip()
+            if sub == "1":
+                generate_report(sample=False)
+            elif sub == "2":
+                generate_report(sample=True)
+            else:
+                print("Cancelled.")
+
 
         elif choice == "0":
             print("\nGood luck with the hunt! 🐶")
