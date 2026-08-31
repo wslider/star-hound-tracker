@@ -1,3 +1,9 @@
+"""
+python/applications.py
+----------------------
+Application pipeline management for Star Hound Tracker (V1).
+"""
+
 from __future__ import annotations
 
 import uuid
@@ -24,6 +30,10 @@ def generate_application_id() -> str:
     return uuid.uuid4().hex[:12]
 
 
+def get_current_date() -> str:
+    return date.today().isoformat()
+
+
 def _has_active_application(job_id: str) -> bool:
     """Return True if there is already a non-archived application for this job."""
     sql = """
@@ -39,7 +49,7 @@ def _has_active_application(job_id: str) -> bool:
 def add_application(
     job_id: str,
     *,
-    status: str = "saved",
+    status: str = "applied",
     applied_date: str | None = None,
     next_follow_up: str | None = None,
     notes: str | None = None,
@@ -61,6 +71,9 @@ def add_application(
             f"An active application already exists for job {job_id}. "
             "Archive the old one first or pass allow_reapply=True."
         )
+
+    if status == "applied" and applied_date is None:
+        applied_date = get_current_date()
 
     application_id = generate_application_id()
 
@@ -162,7 +175,7 @@ def archive_application(application_id: str) -> bool:
 
 
 # ----------------------------------------------------------------------
-# Interactive helper
+# Interactive helpers
 # ----------------------------------------------------------------------
 
 def _ask(prompt: str, cast=None, allow_empty: bool = True):
@@ -212,7 +225,6 @@ def prompt_add_application(user_id: int = 1) -> str | None:
         print("Cancelled.")
         return None
 
-    # Try to interpret as a list number first
     job_id = None
     if choice.isdigit():
         idx = int(choice) - 1
@@ -222,23 +234,43 @@ def prompt_add_application(user_id: int = 1) -> str | None:
             print("Invalid number.")
             return None
     else:
-        job_id = choice  # assume they typed the full job_id
+        job_id = choice
 
-    print(f"Status Options = {STATUSES}")
-    status = input("Starting status (default = saved): ").strip() or "saved"
+    print(f"Status Options = {', '.join(STATUSES)}")
+    status = input("Starting status (default = applied): ").strip() or "applied"
     notes = input("Notes: ").strip() or None
+
+    applied_date = get_current_date() if status == "applied" else None
+    if applied_date:
+        print(f"  → applied_date set to {applied_date}")
 
     try:
         app_id = add_application(
             job_id=job_id,
             status=status,
+            applied_date=applied_date,
             notes=notes,
         )
+
+        extra = {}
+        if status == "offered":
+            extra["offer_date"] = get_current_date()
+        elif status in {"rejected_employer", "rejected_self", "withdrawn"}:
+            extra["archived"] = 1
+            if status == "rejected_employer":
+                extra["rejected_by"] = "employer"
+            elif status == "rejected_self":
+                extra["rejected_by"] = "self"
+
+        if extra:
+            update_application(app_id, **extra)
+
         print(f"\n✓ Application created!  ID: {app_id}")
         return app_id
     except ValueError as e:
         print(f"\n✗ Error: {e}")
         return None
+
 
 def prompt_update_application() -> bool:
     """
@@ -269,7 +301,6 @@ def prompt_update_application() -> bool:
         print("Cancelled.")
         return False
 
-    # Resolve application_id
     application_id = None
     if choice.isdigit():
         idx = int(choice) - 1
@@ -290,16 +321,33 @@ def prompt_update_application() -> bool:
     print(f"Current status: {app['status']}")
     print("(Press Enter to leave a field unchanged)\n")
 
-    # Collect updates
     updates = {}
 
     print(f"Recommended statuses: {', '.join(STATUSES)}")
-    new_status = input(f"New status: ").strip()
-    
+    new_status = input("New status: ").strip()
+
     if new_status:
         if new_status not in STATUSES:
             print(f"Warning: '{new_status}' is not in the recommended status list.")
         updates["status"] = new_status
+
+        today = get_current_date()
+
+        if new_status == "applied" and not app.get("applied_date"):
+            updates["applied_date"] = today
+            print(f"  → applied_date set to {today}")
+
+        elif new_status == "offered":
+            updates["offer_date"] = today
+            print(f"  → offer_date set to {today}")
+
+        elif new_status in {"rejected_employer", "rejected_self", "withdrawn"}:
+            updates["archived"] = 1
+            if new_status == "rejected_employer":
+                updates["rejected_by"] = "employer"
+            elif new_status == "rejected_self":
+                updates["rejected_by"] = "self"
+            print("  → application will be archived")
 
     applied_date = input("Applied date (YYYY-MM-DD): ").strip()
     if applied_date:
