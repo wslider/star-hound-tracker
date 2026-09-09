@@ -8,6 +8,7 @@ plots/
 resumes/
 reports/
 db_backups/
+excel/
 
 # Local databases + SQLite sidecars
 *.db
