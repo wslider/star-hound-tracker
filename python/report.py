@@ -1,11 +1,16 @@
 """
 python/report.py
 ----------------
-Generate a simple HTML weekly report for Star Hound Tracker.
+Generate weekly HTML reports for Star Hound Tracker.
+
+Creates two files:
+  weekly_report_YYYY-MM-DD.html         → editable (image file paths)
+  weekly_report_YYYY-MM-DD_export.html  → shareable (base64-embedded images)
 """
 
 from __future__ import annotations
 
+import base64
 import os
 from datetime import datetime
 from pathlib import Path
@@ -14,8 +19,6 @@ import pandas as pd
 
 from python.db import get_connection
 
-# Paths
-REAL_DB = Path("data/jobs.db")
 SAMPLE_DB = Path("samples/sample_jobs.db")
 REAL_PLOTS_DIR = Path("plots")
 SAMPLE_PLOTS_DIR = Path("samples/sample_plots")
@@ -65,7 +68,30 @@ def _latest_chart_file(chart_dir: Path, name: str) -> Path | None:
     return matches[-1]
 
 
-def _chart_paths(sample: bool = False, report_dir: Path | None = None) -> dict[str, str]:
+def image_to_data_uri(path: Path | str | None) -> str:
+    """Convert a local image into a base64 data URI for HTML <img> tags."""
+    if not path:
+        return ""
+
+    path = Path(path)
+    if not path.exists():
+        return ""
+
+    suffix = path.suffix.lower()
+    mime = {
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".gif": "image/gif",
+        ".webp": "image/webp",
+    }.get(suffix, "image/png")
+
+    encoded = base64.b64encode(path.read_bytes()).decode("ascii")
+    return f"data:{mime};base64,{encoded}"
+
+
+def _chart_file_paths(sample: bool = False, report_dir: Path | None = None) -> dict[str, str]:
+    """Return chart name → relative/absolute file path for the editable HTML."""
     base = SAMPLE_PLOTS_DIR if sample else REAL_PLOTS_DIR
     chart_dir = _newest_day_folder(base)
 
@@ -87,9 +113,36 @@ def _chart_paths(sample: bool = False, report_dir: Path | None = None) -> dict[s
     return paths
 
 
+def _chart_data_uris(file_paths: dict[str, str], report_dir: Path | None = None) -> dict[str, str]:
+    """
+    Turn file paths into embedded data URIs.
+
+    file_paths may be relative to report_dir, so resolve them before reading.
+    """
+    uris = {}
+    for name, path in file_paths.items():
+        if not path:
+            uris[name] = ""
+            continue
+
+        image_path = Path(path)
+        if report_dir is not None and not image_path.is_absolute():
+            image_path = (report_dir / image_path).resolve()
+
+        uris[name] = image_to_data_uri(image_path)
+
+    return uris
+
+
+def _img_tag(src: str, alt: str) -> str:
+    if not src:
+        return f"<p><em>No {alt} chart found.</em></p>"
+    return f'<img src="{src}" alt="{alt}">'
+
+
 def _read_sql(query: str, sample: bool = False) -> pd.DataFrame:
     """Run a query against the correct database."""
-    db_path = SAMPLE_DB if sample else None  # None = real DB
+    db_path = SAMPLE_DB if sample else None
     with get_connection(db_path) as conn:
         return pd.read_sql(query, conn)
 
@@ -97,11 +150,9 @@ def _read_sql(query: str, sample: bool = False) -> pd.DataFrame:
 def build_context(sample: bool = False, report_dir: Path | None = None) -> dict:
     now = datetime.now()
 
-    # 1. User name
     user_df = _read_sql("SELECT name FROM user LIMIT 1", sample=sample)
     name = user_df["name"].iloc[0] if not user_df.empty else "Unknown"
 
-    # 2. Application stats
     stats_df = _read_sql(
         """
         SELECT
@@ -122,20 +173,18 @@ def build_context(sample: bool = False, report_dir: Path | None = None) -> dict:
     avg_score = round(float(stats_df["avg_job_score"].iloc[0] or 0), 1)
     interview_rate = f"{(interviews / total_apps * 100):.1f}%" if total_apps else "0%"
 
-    # 3. Top jobs
     top_jobs_df = _read_sql(
         """
         SELECT title, company, job_score AS score
         FROM applications
         WHERE archived = 0 AND job_score IS NOT NULL
         ORDER BY job_score DESC
-        LIMIT 5
+        LIMIT 10
         """,
         sample=sample,
     )
     top_jobs = top_jobs_df.to_dict(orient="records")
 
-    # 4. Follow-ups
     followups_df = _read_sql(
         """
         SELECT title, company, next_follow_up AS date
@@ -149,6 +198,8 @@ def build_context(sample: bool = False, report_dir: Path | None = None) -> dict:
     )
     followups_due = followups_df.to_dict(orient="records")
 
+    file_charts = _chart_file_paths(sample=sample, report_dir=report_dir)
+
     return {
         "report_title": "Star Hound Tracker – Weekly Report",
         "name": name,
@@ -160,7 +211,7 @@ def build_context(sample: bool = False, report_dir: Path | None = None) -> dict:
             "avg_job_score": avg_score,
             "interview_rate": interview_rate,
         },
-        "charts": _chart_paths(sample=sample, report_dir=report_dir),
+        "charts": file_charts,
         "top_jobs": top_jobs,
         "followups_due": followups_due,
     }
@@ -235,11 +286,11 @@ def render_report(context: dict) -> str:
 
         <section>
             <h2>Charts</h2>
-            <img src="{charts['status_breakdown']}" alt="Status breakdown">
-            <img src="{charts['apps_over_time']}" alt="Applications over time">
-            <img src="{charts['interview_rate']}" alt="Interview rate">
-            <img src="{charts['interview_quality']}" alt="Interview quality">
-            <img src="{charts['funnel']}" alt="Application funnel">
+            {_img_tag(charts['status_breakdown'], 'Status breakdown')}
+            {_img_tag(charts['apps_over_time'], 'Applications over time')}
+            {_img_tag(charts['interview_rate'], 'Interview rate')}
+            {_img_tag(charts['interview_quality'], 'Interview quality')}
+            {_img_tag(charts['funnel'], 'Application funnel')}
         </section>
 
         <section>
@@ -260,25 +311,32 @@ def render_report(context: dict) -> str:
 """
 
 
-def generate_report(sample: bool = False) -> Path:
+def generate_report(sample: bool = False) -> tuple[Path, Path]:
     """
-    Build the report and save it as an HTML file.
+    Build both HTML reports.
 
-    sample=False → reports/YYYY-MM-DD/
-    sample=True  → samples/sample_reports/YYYY-MM-DD/
+    Returns (editable_path, export_path).
     """
     base = SAMPLE_REPORTS_DIR if sample else REAL_REPORTS_DIR
-    day_folder = base / datetime.now().strftime("%Y-%m-%d")
+    today = datetime.now().strftime("%Y-%m-%d")
+    day_folder = base / today
     day_folder.mkdir(parents=True, exist_ok=True)
 
     context = build_context(sample=sample, report_dir=day_folder)
-    html = render_report(context)
 
-    filename = day_folder / f"weekly_report_{datetime.now().strftime('%Y-%m-%d')}.html"
-    filename.write_text(html, encoding="utf-8")
+    # 1. Editable HTML — chart file paths
+    edit_path = day_folder / f"weekly_report_{today}.html"
+    edit_path.write_text(render_report(context), encoding="utf-8")
 
-    print(f"✓ Report saved → {filename}")
-    return filename
+    # 2. Export HTML — same content, embedded images
+    export_context = dict(context)
+    export_context["charts"] = _chart_data_uris(context["charts"], report_dir=day_folder)
+    export_path = day_folder / f"weekly_report_{today}_export.html"
+    export_path.write_text(render_report(export_context), encoding="utf-8")
+
+    print(f"✓ Editable report → {edit_path}")
+    print(f"✓ Export report   → {export_path}")
+    return edit_path, export_path
 
 
 if __name__ == "__main__":
