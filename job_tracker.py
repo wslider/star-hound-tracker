@@ -10,6 +10,7 @@ from python.reminders import print_followup_report, prompt_complete_followup
 from python.backup import backup_all_tables, backup_sample_data
 from python.viz import generate_visualizations
 from python.report import generate_report
+from python.send_email import send_email
 
 
 def show_main_menu():
@@ -27,6 +28,7 @@ def show_main_menu():
     print("9. Save Data")
     print("10. Generate Visualizations")
     print("11. Generate Complete Report")
+    print("12. Email Recent Report")
     print("0. Exit")
     print("=" * 40)
 
@@ -112,6 +114,9 @@ def main():
                 generate_report(sample=True)
             else:
                 print("Cancelled.")
+
+        elif choice == "12":
+            send_email()
 
 
         elif choice == "0":
