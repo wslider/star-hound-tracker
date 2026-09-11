@@ -3,9 +3,10 @@ python/report.py
 ----------------
 Generate weekly HTML reports for Star Hound Tracker.
 
-Creates two files:
-  weekly_report_YYYY-MM-DD.html         → editable (image file paths)
-  weekly_report_YYYY-MM-DD_export.html  → shareable (base64-embedded images)
+Creates:
+  weekly_report_YYYY-MM-DD.html         → editable (file paths)
+  weekly_report_YYYY-MM-DD_export.html  → shareable (base64 embeds)
+  weekly_report_YYYY-MM-DD_email.html   → email-ready (cid: images)
 """
 
 from __future__ import annotations
@@ -35,7 +36,6 @@ CHART_NAMES = [
 
 
 def _newest_day_folder(base: Path) -> Path | None:
-    """Return the newest YYYY-MM-DD subfolder, or None if none exist."""
     if not base.exists():
         return None
 
@@ -56,20 +56,26 @@ def _newest_day_folder(base: Path) -> Path | None:
 
 
 def _latest_chart_file(chart_dir: Path, name: str) -> Path | None:
-    """
-    Find the newest file that starts with the chart name.
-    Matches:
-      status_breakdown.png
-      status_breakdown_221010.png
-    """
     matches = sorted(chart_dir.glob(f"{name}*.png"))
-    if not matches:
-        return None
-    return matches[-1]
+    return matches[-1] if matches else None
+
+
+def get_chart_files(sample: bool = False) -> dict[str, Path]:
+    """Return chart name → actual PNG path on disk."""
+    base = SAMPLE_PLOTS_DIR if sample else REAL_PLOTS_DIR
+    chart_dir = _newest_day_folder(base)
+    if chart_dir is None:
+        return {}
+
+    files = {}
+    for name in CHART_NAMES:
+        path = _latest_chart_file(chart_dir, name)
+        if path:
+            files[name] = path
+    return files
 
 
 def image_to_data_uri(path: Path | str | None) -> str:
-    """Convert a local image into a base64 data URI for HTML <img> tags."""
     if not path:
         return ""
 
@@ -90,48 +96,32 @@ def image_to_data_uri(path: Path | str | None) -> str:
     return f"data:{mime};base64,{encoded}"
 
 
-def _chart_file_paths(sample: bool = False, report_dir: Path | None = None) -> dict[str, str]:
-    """Return chart name → relative/absolute file path for the editable HTML."""
-    base = SAMPLE_PLOTS_DIR if sample else REAL_PLOTS_DIR
-    chart_dir = _newest_day_folder(base)
+def _chart_srcs(
+    mode: str,
+    sample: bool = False,
+    report_dir: Path | None = None,
+) -> dict[str, str]:
+    """
+    mode:
+      file  → relative file path
+      embed → base64 data URI
+      email → cid:chart_name
+    """
+    files = get_chart_files(sample=sample)
+    srcs = {name: "" for name in CHART_NAMES}
 
-    if chart_dir is None:
-        return {name: "" for name in CHART_NAMES}
-
-    paths = {}
-    for name in CHART_NAMES:
-        image_path = _latest_chart_file(chart_dir, name)
-        if image_path is None:
-            paths[name] = ""
-            continue
-
-        if report_dir is not None:
-            paths[name] = Path(os.path.relpath(image_path, start=report_dir)).as_posix()
+    for name, path in files.items():
+        if mode == "email":
+            srcs[name] = f"cid:{name}"
+        elif mode == "embed":
+            srcs[name] = image_to_data_uri(path)
         else:
-            paths[name] = image_path.as_posix()
+            if report_dir is not None:
+                srcs[name] = Path(os.path.relpath(path, start=report_dir)).as_posix()
+            else:
+                srcs[name] = path.as_posix()
 
-    return paths
-
-
-def _chart_data_uris(file_paths: dict[str, str], report_dir: Path | None = None) -> dict[str, str]:
-    """
-    Turn file paths into embedded data URIs.
-
-    file_paths may be relative to report_dir, so resolve them before reading.
-    """
-    uris = {}
-    for name, path in file_paths.items():
-        if not path:
-            uris[name] = ""
-            continue
-
-        image_path = Path(path)
-        if report_dir is not None and not image_path.is_absolute():
-            image_path = (report_dir / image_path).resolve()
-
-        uris[name] = image_to_data_uri(image_path)
-
-    return uris
+    return srcs
 
 
 def _img_tag(src: str, alt: str) -> str:
@@ -141,13 +131,16 @@ def _img_tag(src: str, alt: str) -> str:
 
 
 def _read_sql(query: str, sample: bool = False) -> pd.DataFrame:
-    """Run a query against the correct database."""
     db_path = SAMPLE_DB if sample else None
     with get_connection(db_path) as conn:
         return pd.read_sql(query, conn)
 
 
-def build_context(sample: bool = False, report_dir: Path | None = None) -> dict:
+def build_context(
+    sample: bool = False,
+    report_dir: Path | None = None,
+    charts_mode: str = "file",
+) -> dict:
     now = datetime.now()
 
     user_df = _read_sql("SELECT name FROM user LIMIT 1", sample=sample)
@@ -198,10 +191,8 @@ def build_context(sample: bool = False, report_dir: Path | None = None) -> dict:
     )
     followups_due = followups_df.to_dict(orient="records")
 
-    file_charts = _chart_file_paths(sample=sample, report_dir=report_dir)
-
     return {
-        "report_title": "Star Hound Tracker – Weekly Report",
+        "report_title": "Weekly Jobs Report",
         "name": name,
         "generated_on": now.strftime("%Y-%m-%d %H:%M"),
         "stats": {
@@ -211,14 +202,13 @@ def build_context(sample: bool = False, report_dir: Path | None = None) -> dict:
             "avg_job_score": avg_score,
             "interview_rate": interview_rate,
         },
-        "charts": file_charts,
+        "charts": _chart_srcs(charts_mode, sample=sample, report_dir=report_dir),
         "top_jobs": top_jobs,
         "followups_due": followups_due,
     }
 
 
 def render_report(context: dict) -> str:
-    """Turn the context dictionary into an HTML string."""
     stats = context["stats"]
     charts = context["charts"]
 
@@ -247,12 +237,8 @@ def render_report(context: dict) -> str:
             padding: 24px;
             color: #222;
         }}
-        header {{
-            margin-bottom: 32px;
-        }}
-        section {{
-            margin-bottom: 36px;
-        }}
+        header {{ margin-bottom: 32px; }}
+        section {{ margin-bottom: 36px; }}
         img {{
             display: block;
             width: 100%;
@@ -260,9 +246,7 @@ def render_report(context: dict) -> str:
             margin: 16px 0;
             border: 1px solid #ddd;
         }}
-        ul {{
-            line-height: 1.7;
-        }}
+        ul {{ line-height: 1.7; }}
     </style>
 </head>
 <body>
@@ -271,7 +255,6 @@ def render_report(context: dict) -> str:
         <h2>{context['name']}</h2>
         <p>Generated on: {context['generated_on']}</p>
     </header>
-
     <main>
         <section>
             <h2>Stats</h2>
@@ -283,7 +266,6 @@ def render_report(context: dict) -> str:
                 <li>Interview Rate: {stats['interview_rate']}</li>
             </ul>
         </section>
-
         <section>
             <h2>Charts</h2>
             {_img_tag(charts['status_breakdown'], 'Status breakdown')}
@@ -292,18 +274,12 @@ def render_report(context: dict) -> str:
             {_img_tag(charts['interview_quality'], 'Interview quality')}
             {_img_tag(charts['funnel'], 'Application funnel')}
         </section>
-
         <section>
             <h2>Highlights</h2>
             <h3>Top Jobs</h3>
-            <ul>
-                {top_jobs_html}
-            </ul>
-
+            <ul>{top_jobs_html}</ul>
             <h3>Follow-ups Due</h3>
-            <ul>
-                {followups_html}
-            </ul>
+            <ul>{followups_html}</ul>
         </section>
     </main>
 </body>
@@ -311,32 +287,21 @@ def render_report(context: dict) -> str:
 """
 
 
-def generate_report(sample: bool = False) -> tuple[Path, Path]:
-    """
-    Build both HTML reports.
-
-    Returns (editable_path, export_path).
-    """
+def generate_report(sample: bool = False) -> dict[str, Path]:
     base = SAMPLE_REPORTS_DIR if sample else REAL_REPORTS_DIR
     today = datetime.now().strftime("%Y-%m-%d")
     day_folder = base / today
     day_folder.mkdir(parents=True, exist_ok=True)
 
-    context = build_context(sample=sample, report_dir=day_folder)
+    paths = {}
+    for mode, suffix in (("file", ""), ("embed", "_export"), ("email", "_email")):
+        context = build_context(sample=sample, report_dir=day_folder, charts_mode=mode)
+        filename = day_folder / f"weekly_report_{today}{suffix}.html"
+        filename.write_text(render_report(context), encoding="utf-8")
+        paths[mode] = filename
+        print(f"✓ {mode:5} report → {filename}")
 
-    # 1. Editable HTML — chart file paths
-    edit_path = day_folder / f"weekly_report_{today}.html"
-    edit_path.write_text(render_report(context), encoding="utf-8")
-
-    # 2. Export HTML — same content, embedded images
-    export_context = dict(context)
-    export_context["charts"] = _chart_data_uris(context["charts"], report_dir=day_folder)
-    export_path = day_folder / f"weekly_report_{today}_export.html"
-    export_path.write_text(render_report(export_context), encoding="utf-8")
-
-    print(f"✓ Editable report → {edit_path}")
-    print(f"✓ Export report   → {export_path}")
-    return edit_path, export_path
+    return paths
 
 
 if __name__ == "__main__":

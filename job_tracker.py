@@ -10,7 +10,7 @@ from python.reminders import print_followup_report, prompt_complete_followup
 from python.backup import backup_all_tables, backup_sample_data
 from python.viz import generate_visualizations
 from python.report import generate_report
-from python.send_email import send_email
+from python.send_report import send_report
 
 
 def show_main_menu():
@@ -116,7 +116,10 @@ def main():
                 print("Cancelled.")
 
         elif choice == "12":
-            send_email()
+            print("1. Email real report")
+            print("2. Email sample report")
+            sub = input("Choice: ").strip()
+            send_report(sample=(sub == "2"))
 
 
         elif choice == "0":
