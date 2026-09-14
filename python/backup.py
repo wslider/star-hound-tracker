@@ -2,6 +2,7 @@
 python/backup.py
 ----------------
 Backup all SQLite tables to CSV files.
+Backup to Excel file with tables as sheets. 
 
 Default (real data):
     db_backups/YYYY-MM-DD/table_HHMMSS.csv
@@ -48,6 +49,8 @@ def backup_all_tables(
 
     timestamp = now.strftime("%H%M%S")
 
+    excel_path = day_folder / f"job_data_{timestamp}.xlsx"
+
     with get_connection(db_path) as conn:
         tables = conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';"
@@ -56,21 +59,32 @@ def backup_all_tables(
         if not tables:
             print("No tables found in the database.")
             return
-
         print(f"Backing up {len(tables)} table(s) → {day_folder}\n")
 
-        for (table_name,) in tables:
-            try:
-                df = pd.read_sql(f"SELECT * FROM {table_name}", conn)
+        with pd.ExcelWriter(excel_path, engine="openpyxl") as writer:
+            for (table_name,) in tables:
+                try:
+                    df = pd.read_sql(f"SELECT * FROM {table_name}", conn)
 
-                filename = day_folder / f"{table_name}_{timestamp}.csv"
-                df.to_csv(filename, index=False)
+                    # CSV (keep what you already have)
+                    csv_path = day_folder / f"{table_name}_{timestamp}.csv"
+                    df.to_csv(csv_path, index=False)
 
-                print(f"✓ {table_name:20} → {filename.name}  ({len(df)} rows)")
-            except Exception as e:
-                print(f"✗ Failed to backup {table_name}: {e}")
+                    # Excel sheet names max out at 31 characters
+                    sheet = table_name[:31]
+                    df.to_excel(writer, sheet_name=sheet, index=False)
 
+                    print(f"✓ {table_name:20} → {csv_path.name}  ({len(df)} rows)")
+                    
+
+                except Exception as e:
+                    print(f"✗ Failed to backup {table_name}: {e}")
+
+    print(f"✓ Excel workbook → {excel_path.name}")
     print(f"\nBackup complete → {day_folder}")
+
+
+
 
 
 def backup_sample_data() -> None:

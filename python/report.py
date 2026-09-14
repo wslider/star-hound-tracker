@@ -2,6 +2,7 @@
 python/report.py
 ----------------
 Generate weekly HTML reports for Star Hound Tracker.
+Locate most recent excel file in backups to attach to report email. 
 
 Creates:
   weekly_report_YYYY-MM-DD.html         → editable (file paths)
@@ -25,6 +26,8 @@ REAL_PLOTS_DIR = Path("plots")
 SAMPLE_PLOTS_DIR = Path("samples/sample_plots")
 REAL_REPORTS_DIR = Path("reports")
 SAMPLE_REPORTS_DIR = Path("samples/sample_reports")
+DB_BACKUPS_DIR = Path("db_backups")
+SAMPLE_BACKUPS_DIR = Path("samples/sample_backup_data")
 
 CHART_NAMES = [
     "status_breakdown",
@@ -33,6 +36,7 @@ CHART_NAMES = [
     "interview_quality",
     "funnel",
 ]
+
 
 
 def _newest_day_folder(base: Path) -> Path | None:
@@ -74,6 +78,19 @@ def get_chart_files(sample: bool = False) -> dict[str, Path]:
             files[name] = path
     return files
 
+
+def _latest_excel_file(backup_dir: Path) -> Path | None:
+    matches = sorted(backup_dir.glob("job_data_*.xlsx"))
+    return matches[-1] if matches else None
+
+
+def get_excel_file(sample: bool = False) -> Path | None:
+    """Return the newest job_data_*.xlsx backup, or None."""
+    base = SAMPLE_BACKUPS_DIR if sample else DB_BACKUPS_DIR
+    backup_dir = _newest_day_folder(base)
+    if backup_dir is None:
+        return None
+    return _latest_excel_file(backup_dir)
 
 def image_to_data_uri(path: Path | str | None) -> str:
     if not path:

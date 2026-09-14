@@ -2,6 +2,7 @@
 python/send_report.py
 ---------------------
 Email the latest email-ready HTML report with CID chart attachments.
+Attatch latest Excel File in Backup
 
 Uses EMAIL_USER and EMAIL_PASS from the environment.
 Gmail: EMAIL_PASS should be an App Password.
@@ -15,12 +16,14 @@ from datetime import datetime
 from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
 from pathlib import Path
 
 from python.report import (
     REAL_REPORTS_DIR,
     SAMPLE_REPORTS_DIR,
     get_chart_files,
+    get_excel_file,
 )
 
 REPORTS_DIR = REAL_REPORTS_DIR
@@ -83,6 +86,20 @@ def send_report(sample: bool = False, to_email: str | None = None) -> bool:
         img.add_header("Content-Disposition", "inline", filename=path.name)
         msg.attach(img)
 
+    excel_path = get_excel_file(sample=sample)
+    if excel_path and excel_path.exists():
+        with excel_path.open("rb") as f:
+            part = MIMEApplication(
+                f.read(),
+                _subtype="vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        part.add_header("Content-Disposition", "attachment", filename=excel_path.name)
+        msg.attach(part)
+        excel_note = f" + {excel_path.name}"
+    else:
+        print("  no Excel backup found (skipped)")
+        excel_note = ""
+
     try:
         with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
             smtp.starttls()
@@ -92,7 +109,9 @@ def send_report(sample: bool = False, to_email: str | None = None) -> bool:
         print(f"✗ Failed to send email: {e}")
         return False
 
-    print(f"✓ Sent {html_path.name} with {len(charts)} chart(s) to {to_email}")
+    
+
+    print(f"✓ Sent {html_path.name} with {len(charts)} chart(s){excel_note} to {to_email}")
     return True
 
 
