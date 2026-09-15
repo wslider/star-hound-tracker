@@ -7,7 +7,7 @@ from python.users import prompt_create_user, prompt_update_user, get_user
 from python.jobs import prompt_add_job, list_jobs
 from python.applications import prompt_add_application, list_applications, prompt_update_application
 from python.reminders import print_followup_report, prompt_complete_followup
-from python.backup import backup_all_tables, backup_sample_data
+from python.backup import backup_real_tables, backup_sample_data
 from python.viz import generate_visualizations
 from python.report import generate_report
 from python.send_report import send_report
@@ -29,6 +29,7 @@ def show_main_menu():
     print("10. Generate Visualizations")
     print("11. Generate Complete Report")
     print("12. Email Recent Report")
+    print("13. Full Send (9 - 12)")
     print("0. Exit")
     print("=" * 40)
 
@@ -91,8 +92,8 @@ def main():
         elif choice == "8":
             prompt_complete_followup()
 
-        elif choice == "9": 
-            backup_all_tables()
+        elif choice == "9":
+            backup_real_tables()
             backup_sample_data()
 
         elif choice == "10":
@@ -101,8 +102,10 @@ def main():
             sub = input("Choice: ").strip()
             if sub == "1":
                 generate_visualizations(sample=False)
-            else:
+            elif sub == "2":
                 generate_visualizations(sample=True)
+            else:
+                print("Cancelled.")
 
         elif choice == "11":
             print("1. Real data report")
@@ -119,8 +122,30 @@ def main():
             print("1. Email real report")
             print("2. Email sample report")
             sub = input("Choice: ").strip()
-            send_report(sample=(sub == "2"))
+            if sub not in {"1", "2"}:
+                print("Cancelled.")
+                continue
+            to_addr = input("Send to: ").strip() or None
+            send_report(sample=(sub == "2"), to_email=to_addr)
 
+        elif choice == "13":
+            print("1. Real Jobs Data")
+            print("2. Sample Jobs Data")
+            sub = input("Choice: ").strip()
+            if sub not in {"1", "2"}:
+                print("Please enter 1 or 2")
+                continue
+            to_addr = input("Send to: ").strip() or None
+            use_sample = sub == "2"
+
+            if use_sample:
+                backup_sample_data()
+            else:
+                backup_real_tables()
+
+            generate_visualizations(sample=use_sample)
+            generate_report(sample=use_sample)
+            send_report(sample=use_sample, to_email=to_addr)
 
         elif choice == "0":
             print("\nGood luck with the hunt! 🐶")
