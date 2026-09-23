@@ -94,6 +94,19 @@ def init_db(db_path: Path | str | None = None):
             archived INTEGER DEFAULT 0,
             FOREIGN KEY (job_id) REFERENCES jobs(job_id)
         );
+
+        CREATE TABLE IF NOT EXISTS contacts (
+            contact_id TEXT PRIMARY KEY,
+            first_name TEXT,
+            last_name TEXT,
+            relationship TEXT,
+            company TEXT,
+            network_strength REAL,
+            last_contact_date TEXT,
+            phone TEXT,
+            email TEXT,
+            notes TEXT
+        );
         """)
         conn.commit()
         print(f"Database ready: {path}")

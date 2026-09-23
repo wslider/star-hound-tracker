@@ -25,6 +25,8 @@ notes.ipynb
 notebooks/.cache.sqlite
 job_tracker.ipynb
 .ipynb_checkpoints/
+contacts.ipynb
+*.ipynb
 
 # Local config that may contain personal paths or preferences
 config.local.*

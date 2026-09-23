@@ -10,6 +10,7 @@ from python.reminders import print_followup_report, prompt_complete_followup
 from python.backup import backup_real_tables, backup_sample_data
 from python.viz import generate_visualizations
 from python.report import generate_report
+from python.contacts import prompt_add_contact
 from python.send_report import send_report
 
 
@@ -29,7 +30,8 @@ def show_main_menu():
     print("10. Generate Visualizations")
     print("11. Generate Complete Report")
     print("12. Email Recent Report")
-    print("13. Full Send (9 - 12)")
+    print("13. Update Contact")
+    print("14. Full Send (9 - 12)")
     print("0. Exit")
     print("=" * 40)
 
@@ -129,6 +131,9 @@ def main():
             send_report(sample=(sub == "2"), to_email=to_addr)
 
         elif choice == "13":
+            prompt_add_contact()
+
+        elif choice == "14":
             print("1. Real Jobs Data")
             print("2. Sample Jobs Data")
             sub = input("Choice: ").strip()
