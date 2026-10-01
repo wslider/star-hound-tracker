@@ -3,8 +3,7 @@ python/contacts.py
 --------------
 Networking management for Star Hound Tracker (V1).
 
-Keep track of contacts and refferences. 
-
+Keep track of contacts and references.
 """
 
 from __future__ import annotations
@@ -14,12 +13,27 @@ from datetime import date
 from typing import Any
 
 from python.db import get_connection
-from python.scoring import calculate_job_score
-from python.users import get_user
 
 
-def generate_contact_id() ->str:
-    return uuid.uuid4().hex[:12] 
+def generate_contact_id() -> str:
+    return uuid.uuid4().hex[:12]
+
+
+def get_current_date() -> str:
+    return date.today().isoformat()
+
+
+def _has_contact(contact_id: str) -> bool:
+    """Return True if a contact with this id already exists."""
+    sql = """
+        SELECT 1 FROM contacts
+        WHERE contact_id = ?
+        LIMIT 1
+    """
+    with get_connection() as conn:
+        row = conn.execute(sql, (contact_id,)).fetchone()
+    return row is not None
+
 
 def add_contact(
     first_name: str | None = None,
@@ -31,7 +45,6 @@ def add_contact(
     phone: str | None = None,
     email: str | None = None,
     notes: str | None = None,
-    user_id: int = 1,
 ) -> str:
     contact_id = generate_contact_id()
 
@@ -46,10 +59,9 @@ def add_contact(
             last_contact_date,
             phone,
             email,
-            notes,
-            user_id
+            notes
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
     values = (
         contact_id,
@@ -62,7 +74,6 @@ def add_contact(
         phone,
         email,
         notes,
-        user_id,
     )
 
     with get_connection() as conn:
@@ -71,6 +82,58 @@ def add_contact(
 
     return contact_id
 
+
+def get_contact(contact_id: str) -> dict[str, Any] | None:
+    sql = "SELECT * FROM contacts WHERE contact_id = ?"
+    with get_connection() as conn:
+        row = conn.execute(sql, (contact_id,)).fetchone()
+    return dict(row) if row else None
+
+def list_contacts() -> list[dict[str, Any]]:
+    
+    sql = f"""
+        SELECT * FROM contacts
+        ORDER BY network_strength DESC
+        LIMIT 50;
+    """
+
+    with get_connection() as conn:
+        rows = conn.execute(sql).fetchall()
+
+    return [dict(row) for row in rows]
+
+
+def update_contact(contact_id: str, **kwargs) -> bool:
+    if not kwargs:
+        return False
+
+    allowed = {
+        "first_name",
+        "last_name",
+        "relationship",
+        "company",
+        "network_strength",
+        "last_contact_date",
+        "phone",
+        "email",
+        "notes",
+    }
+
+    updates = {k: v for k, v in kwargs.items() if k in allowed}
+    if not updates:
+        return False
+
+    set_clause = ", ".join(f"{col} = ?" for col in updates)
+    sql = f"UPDATE contacts SET {set_clause} WHERE contact_id = ?"
+    values = list(updates.values()) + [contact_id]
+
+    with get_connection() as conn:
+        cursor = conn.execute(sql, values)
+        conn.commit()
+        return cursor.rowcount > 0
+
+
+# Interactive Helpers
 
 
 def _ask(prompt: str, cast=None, allow_empty: bool = True):
@@ -87,9 +150,7 @@ def _ask(prompt: str, cast=None, allow_empty: bool = True):
             print("  → Invalid value, please try again.")
 
 
-
-def prompt_add_contact(user_id: int = 1) -> str | None:
-    
+def prompt_add_contact() -> str | None:
     print("\n=== Add New Contact ===")
     print("(Press Enter to leave optional fields empty)\n")
 
@@ -98,12 +159,12 @@ def prompt_add_contact(user_id: int = 1) -> str | None:
     relationship = _ask("Relationship: ", allow_empty=False)
     company = _ask("Company: ", allow_empty=False)
     network_strength = _ask("How Well Do You Know Each Other (1-10): ", cast=int)
-    last_contact_date = _ask("Most Revent Communication: YYYY-MM-DD ")
+    last_contact_date = _ask("Most Recent Communication: YYYY-MM-DD ")
     phone = _ask("Primary Phone Number: ")
     email = _ask("Email: ")
     notes = _ask("Notes: ")
 
-    print("\nSaving job...")
+    print("\nSaving contact...")
 
     contact_id = add_contact(
         first_name=first_name,
@@ -115,8 +176,11 @@ def prompt_add_contact(user_id: int = 1) -> str | None:
         phone=phone,
         email=email,
         notes=notes,
-        user_id=user_id,
     )
 
     print(f"✓ contact added successfully!  ID: {contact_id}")
-    return contact_id 
+    return contact_id
+
+
+def prompt_update_contact():
+    pass
