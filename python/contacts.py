@@ -103,6 +103,7 @@ def list_contacts() -> list[dict[str, Any]]:
     return [dict(row) for row in rows]
 
 
+
 def update_contact(contact_id: str, **kwargs) -> bool:
     if not kwargs:
         return False
@@ -149,6 +150,9 @@ def _ask(prompt: str, cast=None, allow_empty: bool = True):
         except ValueError:
             print("  → Invalid value, please try again.")
 
+def prompt_list_contacts():
+    contacts = list_contacts()
+    print(contacts)
 
 def prompt_add_contact() -> str | None:
     print("\n=== Add New Contact ===")
@@ -183,4 +187,88 @@ def prompt_add_contact() -> str | None:
 
 
 def prompt_update_contact():
-    pass
+    print("\n=== Update Contact ===\n")
+    
+    contacts = list_contacts()
+
+    if not contacts:
+        print("No active applications found.")
+        return False
+
+    print("List of Contacts:\n")
+    for i, contact in enumerate(contacts, start=1):
+        print(f"  {i:2}. {contact['first_name']:18} | {contact['last_name']}  |  @ {contact['company']}")
+        print(f"      Contact ID: {contact['contact_id']}")
+
+    print()
+    choice = input("Enter number (or full contact_id): ").strip()
+
+    if not choice:
+        print("Cancelled.")
+        return False
+
+    contact_id = None
+    if choice.isdigit():
+        idx = int(choice) - 1
+        if 0 <= idx < len(contacts):
+            contact_id = contacts[idx]["contact_id"]
+        else:
+            print("Invalid number.")
+            return False
+    else:
+        contact_id = choice
+
+    contact = get_contact(contact_id)
+    if contact is None:
+        print(f"Contact {contact_id} not found.")
+        return False
+
+    print(f"\nUpdating: {contact['first_name']} {contact['last_name']} @ {contact['company']}")
+    print("(Press Enter to leave a field unchanged)\n")
+
+    updates = {}
+
+    company = input("Company: ").strip()
+    if company:
+        updates["company"] = company
+
+    network_stength = input("Network Stength: ").strip()
+    if network_stength:
+        try:
+            updates["network_stength"] = int(network_stength, range=(0,10))
+        except ValueError:
+            print("  → Invalid Value, enter a number between 1 and 10.")
+
+    last_contact_date = input("Enter 'today' or Last Contact date (YYYY-MM-DD): ").strip()
+    if last_contact_date.lower() == "today":
+        last_contact_date = get_current_date()
+    if last_contact_date:
+        updates["last_contact_date"] = last_contact_date
+
+    # validation of inputs later
+    phone = input("Phone Number: ").strip()
+    if phone:
+        updates["phone"] = phone
+
+    # validation of inputs later
+    email = input("Email: ").strip()
+    if email:
+        updates["email"] = email
+
+    # validation of inputs later
+    notes = input("Notes: ").strip()
+    if notes:
+        updates["notes"] = notes
+
+    if not updates:
+        print("Nothing to update.")
+        return False
+
+    success = update_contact(contact_id, **updates)
+
+    if success:
+        print(f"\n✓ contact {contact_id} updated.")
+    else:
+        print("\n✗ Update failed.")
+
+    return success

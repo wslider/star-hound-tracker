@@ -10,7 +10,7 @@ from python.reminders import print_followup_report, prompt_complete_followup
 from python.backup import backup_real_tables, backup_sample_data
 from python.viz import generate_visualizations
 from python.report import generate_report
-from python.contacts import prompt_add_contact, prompt_update_contact, list_contacts
+from python.contacts import prompt_add_contact, prompt_update_contact, prompt_list_contacts
 from python.send_report import send_report
 
 
@@ -140,7 +140,7 @@ def main():
             elif sub == "2":
                 prompt_update_contact()
             elif sub == "3":
-                list_contacts()
+                prompt_list_contacts()
             else:
                 print("Cancelled.")
 
