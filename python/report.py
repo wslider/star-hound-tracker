@@ -195,6 +195,17 @@ def build_context(
     )
     top_jobs = top_jobs_df.to_dict(orient="records")
 
+    recent_contacts_df = _read_sql(
+        """
+        SELECT first_name, last_name, company, last_contact_date as date
+        FROM contacts
+        ORDER by date DESC
+        LIMIT 10
+        """,
+        sample=sample,
+    )
+    recent_contacts = recent_contacts_df.to_dict(orient="records")
+
     followups_df = _read_sql(
         """
         SELECT title, company, next_follow_up AS date
@@ -209,19 +220,20 @@ def build_context(
     followups_due = followups_df.to_dict(orient="records")
 
     return {
-        "report_title": "Weekly Jobs Report",
-        "name": name,
-        "generated_on": now.strftime("%Y-%m-%d %H:%M"),
-        "stats": {
-            "total_applications": total_apps,
-            "interviews": interviews,
-            "offers": offers,
-            "avg_job_score": avg_score,
-            "interview_rate": interview_rate,
-        },
-        "charts": _chart_srcs(charts_mode, sample=sample, report_dir=report_dir),
-        "top_jobs": top_jobs,
-        "followups_due": followups_due,
+    "report_title": "Weekly Jobs Report",
+    "name": name,
+    "generated_on": now.strftime("%Y-%m-%d %H:%M"),
+    "stats": {
+        "total_applications": total_apps,
+        "interviews": interviews,
+        "offers": offers,
+        "avg_job_score": avg_score,
+        "interview_rate": interview_rate,
+    },
+    "charts": _chart_srcs(charts_mode, sample=sample, report_dir=report_dir),
+    "top_jobs": top_jobs,
+    "recent_contacts": recent_contacts,
+    "followups_due": followups_due,
     }
 
 
@@ -233,6 +245,11 @@ def render_report(context: dict) -> str:
         f"<li>{job['title']} @ {job['company']} — {job['score']}</li>"
         for job in context["top_jobs"]
     ) or "<li>No jobs yet.</li>"
+
+    recent_contacts_html = "".join(
+            f"<li>{contact['first_name']} {contact['last_name']} @ {contact['company']} — {contact['date']}</li>"
+            for contact in context["recent_contacts"]
+        ) or "<li>No contacts yet.</li>"
 
     followups_html = "".join(
         f"<li>{item['title']} @ {item['company']} — due {item['date']}</li>"
@@ -295,6 +312,8 @@ def render_report(context: dict) -> str:
             <h2>Highlights</h2>
             <h3>Top Jobs</h3>
             <ul>{top_jobs_html}</ul>
+            <h3>Recent Contacts</h3>
+            <ul>{recent_contacts_html}</ul>
             <h3>Follow-ups Due</h3>
             <ul>{followups_html}</ul>
         </section>
